@@ -3,6 +3,8 @@ class Product {
     'Name': string;
     'Quantity': number;
     'Value': number;
+    'MinQuantity': number | null;
+    'MaxQuantity': number | null;
 }
 
 export default Product;

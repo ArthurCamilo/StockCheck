@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import Movement from '../models/movement';
 import Product from '../models/product';
 import Supplier from '../models/supplier';
+import Notification from '../models/notifications';
 
 interface DataContextProps {
     products: Product[];
@@ -20,6 +21,8 @@ interface DataContextProps {
     handleSupplierDelete: Function;
     editSupplier: Function;
     returnToList: Function;
+    deleteNotification: Function;
+    notifications: Notification[];
 }
 
 const DataContext = createContext<DataContextProps>({} as DataContextProps);
@@ -35,24 +38,31 @@ export const DataProvider: React.FC = ({children}) => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [supplier, setSupplier] = useState<Supplier | null>(null);
 
-    useEffect(() => {
-        async function loadStoragedData() {
-            const productsStorage = localStorage.getItem('@STOCKCHECKData:products');
-            const movementsStorage = localStorage.getItem('@STOCKCHECKData:movements');
-            const suppliersStorage = localStorage.getItem('@STOCKCHECKData:suppliers');
-            if (productsStorage && movementsStorage && suppliersStorage) {
-                setProducts(JSON.parse(productsStorage));
-                setMovements(JSON.parse(movementsStorage));
-                setSuppliers(JSON.parse(suppliersStorage));
-            }
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+
+    async function loadStoragedData() {
+        const productsStorage = localStorage.getItem('@STOCKCHECKData:products');
+        const movementsStorage = localStorage.getItem('@STOCKCHECKData:movements');
+        const suppliersStorage = localStorage.getItem('@STOCKCHECKData:suppliers');
+        const notificationsStorage = localStorage.getItem('@STOCKCHECKData:notifications');
+        if (productsStorage && movementsStorage && suppliersStorage && notificationsStorage) {
+            setProducts(JSON.parse(productsStorage));
+            setMovements(JSON.parse(movementsStorage));
+            setSuppliers(JSON.parse(suppliersStorage));
+            setNotifications(JSON.parse(notificationsStorage));
         }
+    }
+
+    useEffect(() => {
         loadStoragedData();
     }, [])
 
-    function setData(products: Product[], movements: Movement[], suppliers: Supplier[]) {
+    function setData(products: Product[], movements: Movement[], suppliers: Supplier[], notifications: Notification[]) {
         localStorage.setItem('@STOCKCHECKData:products', JSON.stringify(products));
         localStorage.setItem('@STOCKCHECKData:movements', JSON.stringify(movements));
         localStorage.setItem('@STOCKCHECKData:suppliers', JSON.stringify(suppliers));
+        localStorage.setItem('@STOCKCHECKData:notifications', JSON.stringify(notifications));
+        loadStoragedData();
     }
     
     function handleProductEdit(editedProduct: Product) {
@@ -66,7 +76,7 @@ export const DataProvider: React.FC = ({children}) => {
         setProducts(productsCopy);
         setProduct(null);
 
-        setData(productsCopy, movements, suppliers);
+        setData(productsCopy, movements, suppliers, notifications);
     }
 
     function handleProductDelete() {
@@ -76,12 +86,20 @@ export const DataProvider: React.FC = ({children}) => {
         setProducts(productsCopy);
         setProduct(null);
         
-        setData(productsCopy, movements, suppliers);
+        setData(productsCopy, movements, suppliers, notifications);
+    }
+
+    function deleteNotification(notification: Notification) {
+        let notificationsCopy = notifications.slice(); 
+        let index = notificationsCopy.indexOf(notification ?? {} as Notification);
+        notificationsCopy.splice(index, 1);
+        setNotifications(notificationsCopy);
+        setData(products, movements, suppliers, notificationsCopy);
     }
 
     function editProduct(product: Product | null) {
         if (product === null) {
-            setProduct({ ID: 0, Name: '', Quantity: 0, Value: 0 });
+            setProduct({ ID: 0, Name: '', Quantity: 0, Value: 0, MinQuantity: 0, MaxQuantity: 0 });
         } else {
             setProduct(product);
         }
@@ -110,9 +128,20 @@ export const DataProvider: React.FC = ({children}) => {
             }
             movementsCopy.unshift(editedMovement);
         }
+
+        let notificationsCopy = notifications.slice();
+
+        if (product.MinQuantity != null && product.Quantity < product.MinQuantity) {
+            notificationsCopy.unshift({ Product: product.ID, Msg: `O produto ${product.Name} está abaixo do estoque mínimo`, Type: 'Min' });
+        }
+
+        if (product.MaxQuantity != null && product.Quantity > product.MaxQuantity) {
+            notificationsCopy.unshift({ Product: product.ID, Msg: `O produto ${product.Name} está acima do estoque máximo`, Type: 'Max' });
+        }
+
         setMovements(movementsCopy);
         setMovement(null);
-        setData(products, movementsCopy, suppliers);
+        setData(products, movementsCopy, suppliers, notificationsCopy);
     }
 
     function handleMovementDelete() {
@@ -122,7 +151,7 @@ export const DataProvider: React.FC = ({children}) => {
         setMovements(movementsCopy);
         setMovement(null);
 
-        setData(products, movementsCopy, suppliers);
+        setData(products, movementsCopy, suppliers, notifications);
     }
 
     function editMovement(movement: Movement | null) {
@@ -144,7 +173,7 @@ export const DataProvider: React.FC = ({children}) => {
         setSuppliers(suppliersCopy);
         setSupplier(null);
    
-        setData(products, movements, suppliersCopy);
+        setData(products, movements, suppliersCopy, notifications);
     }
 
     function handleSupplierDelete() {
@@ -154,7 +183,7 @@ export const DataProvider: React.FC = ({children}) => {
         setSuppliers(suppliersCopy);
         setSupplier(null);
       
-        setData(products, movements, suppliersCopy);
+        setData(products, movements, suppliersCopy, notifications);
     }
 
     function editSupplier(supplier: Supplier | null) {
@@ -176,7 +205,7 @@ export const DataProvider: React.FC = ({children}) => {
                 products, product, handleProductEdit, handleProductDelete, editProduct,
                 movements, movement, handleMovementEdit, handleMovementDelete, editMovement,
                 suppliers, supplier, handleSupplierEdit, handleSupplierDelete, editSupplier,
-                returnToList
+                returnToList, notifications, deleteNotification
             }}>
             {children}
         </DataContext.Provider>

@@ -2,6 +2,7 @@ import { createGlobalStyle } from 'styled-components';
 import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa'
 import { NullLiteral } from 'typescript';
+import { Popover } from '@material-ui/core';
 
 export default createGlobalStyle`
   * {
@@ -139,6 +140,38 @@ export const TopSection = styled.section`
     margin-right: 5px;
   }
 
+  width: 100%;
+
+  position: relative;
+
   display: flex;
   margin-bottom: 15px;
+`;
+
+export const Alert = styled.button`
+  align-self: flex-end;
+
+  background-color: white;
+
+
+  position: absolute;
+  right: 40px;
+  top: 40px;
+
+  svg {
+    height: 35px;
+    font-size: 25px;
+  }
+`;
+
+export const StyledPopover = styled(Popover)`
+  div {
+    padding: 10px;
+    opacity: 0.6;
+    cursor: pointer;
+  }
+
+  div:hover {
+    opacity: 1;
+  }
 `;
