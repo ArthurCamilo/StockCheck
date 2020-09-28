@@ -108,28 +108,35 @@ export const DataProvider: React.FC = ({children}) => {
     function handleMovementEdit(editedMovement: Movement) {
         let movementsCopy = movements.slice(); 
         let index = movementsCopy.indexOf(movement ?? {} as Movement);
-        let product = products.find(prod => prod.Name === editedMovement.Product) ?? {} as Product;
+        let product = products.find(prod => prod.Name === editedMovement.Product);
+
+        if (!product) {
+            return;
+        }
+
         if (index  !== -1) {
             let previousQty = movementsCopy[index].Quantity;
             let currentQty = editedMovement.Quantity;
             let productSum = previousQty - currentQty;
             if (editedMovement.Type == 'Entrada') {
-                product.Quantity += productSum;
+                product.Quantity = parseInt(product.Quantity.toString()) + parseInt(productSum.toString());
             } else {
-                product.Quantity -= productSum;
+                product.Quantity = parseInt(product.Quantity.toString()) - parseInt(productSum.toString());
             }
             handleProductEdit(product);
             movementsCopy[index] = editedMovement;
         } else {
             if (editedMovement.Type == 'Entrada') {
-                product.Quantity += editedMovement.Quantity;
+                product.Quantity = parseInt(product.Quantity.toString()) + parseInt(editedMovement.Quantity.toString());
             } else {
-                product.Quantity -= editedMovement.Quantity;
+                product.Quantity = parseInt(product.Quantity.toString()) - parseInt(editedMovement.Quantity.toString());
             }
             movementsCopy.unshift(editedMovement);
         }
 
         let notificationsCopy = notifications.slice();
+
+        debugger;
 
         if (product.MinQuantity != null && product.Quantity < product.MinQuantity) {
             notificationsCopy.unshift({ Product: product.ID, Msg: `O produto ${product.Name} está abaixo do estoque mínimo`, Type: 'Min' });
